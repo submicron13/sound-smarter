@@ -1,59 +1,103 @@
 <script>
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcome_fallback from '$lib/images/svelte-welcome.png';
+	let headers = {
+		'Content-Type': 'application/json',
+		// Authorization: `Bearer ${process.env.BEARER}`
+	};
+	let method = 'POST';
+	let input_prompt = 'Can you improve this?';
+	let prompt_text = '';
+	let isLoading = false;
+	const endpoint = '/api/chatgpt';
+	// const endpoint = 'https://api.openai.com/v1/completions';
+	let data;
+	let posts = [];
+
+	async function handleSubmit() {
+		isLoading = true;
+		let body = JSON.stringify({
+			model: 'text-davinci-003',
+			prompt: input_prompt + '\nStatement:' + prompt_text + '\nResult:',
+			max_tokens: 2000,
+			temperature: 0
+		});
+		const response = await fetch(endpoint, {
+			method: method,
+			headers: headers,
+			body: body
+		});
+		data = await response.json();
+		isLoading = false;
+	}
+	function copyToClipboard() {
+		navigator.clipboard.writeText(data.choices[0].text);
+	}
+	function handleClear() {
+		prompt_text = '';
+	}
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Sound Smarter</title>
+	<meta name="description" content="Sound Smarter Powered by ChatGPT" />
 </svelte:head>
+<div class="container">
+<h1>Sound Smarter</h1>
+<h2>Powered By OpenAi</h2>
+<form on:submit|preventDefault={handleSubmit}>
+	<div class="form-group row">
+		<label for="input_prompt">Input Prompt:</label>
+		<div class="col-sm-12">
+			<input name="input_prompt" class="form-control" bind:value={input_prompt} />
+		</div>
+	</div>
+	<div class="form-group row">
+		<label for="prompt">Prompt:</label>
+		<div class="col-sm-12">
+			<textarea
+				name="prompt"
+				class="form-control"
+				bind:value={prompt_text}
+				rows="10"
+				placeholder="What can I improve for you?"
+			/>
+		</div>
+	</div>
+	<div class="form-group row mt-3">
+		<div class="col-sm-6">
+			<button class="form-control btn btn-primary" type="submit"> Submit </button>
+		</div>
+		<div class="col-sm-6">
+			<button class="form-control btn btn-primary" on:click={handleClear}>Clear</button>
+		</div>
+	</div>
+</form>
 
-<section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcome_fallback} alt="Welcome" />
-			</picture>
-		</span>
+<div class="alert alert-secondary mt-3">
+	{#if isLoading}
+		<div class="card-text loading"><p>Loading...</p></div>
+	{:else if data}
+		<p class="card-text">Response: {data.choices[0].text}</p>
+	{:else}
+		<p class="card-text">Response will appear here!</p>
+	{/if}
+</div>
 
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
-</section>
-
+<button class="form-control btn btn-primary" on:click={copyToClipboard}>Copy to Clipboard</button>
+</div>
 <style>
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
+	.loading {
+		animation: pulse 1s infinite;
 	}
 
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
+	@keyframes pulse {
+		0% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.5);
+		}
+		100% {
+			transform: scale(1);
+		}
 	}
 </style>
